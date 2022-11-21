@@ -148,8 +148,6 @@ contract LilVRGDA is ILilVRGDA, LinearVRGDA, Pausable, ReentrancyGuard, Ownable 
         return (_nextNounIdForCaller, seed, svg, price, hash);
     }
 
-    // TODO: I can keep this function private and still test by having my
-    // tests inherit from this contract
     function getCurrentVRGDAPrice() public view returns (uint256) {
         uint256 absoluteTimeSinceStart = block.timestamp - startTime;
         return
