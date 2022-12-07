@@ -4,3 +4,6 @@
 [submodule "lib/lilnouns-monorepo"]
 	path = lib/lilnouns-monorepo
 	url = https://github.com/lilnounsDAO/lilnouns-monorepo
+[submodule "lib/VRGDAs"]
+	path = lib/VRGDAs
+	url = https://github.com/nvonpentz/VRGDAs
