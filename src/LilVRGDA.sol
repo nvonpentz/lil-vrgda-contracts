@@ -6,34 +6,34 @@ import { INounsDescriptor } from "lil-nouns-contracts/interfaces/INounsDescripto
 import { ILilVRGDA } from "./interfaces/ILilVRGDA.sol";
 import { IWETH } from "lil-nouns-contracts/interfaces/IWETH.sol";
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import { LinearVRGDA } from "VRGDAs/LinearVRGDA.sol";
+import { LinearVRGDAUpgradeable } from "VRGDAs/LinearVRGDAUpgradeable.sol";
 import { NounsToken } from "lil-nouns-contracts/NounsToken.sol";
-import { Ownable } from '@openzeppelin/contracts/access/Ownable.sol';
-import { Pausable } from '@openzeppelin/contracts/security/Pausable.sol';
-import { ReentrancyGuard } from '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import { OwnableUpgradeable } from 'openzeppelin-contracts-upgradeable/access/OwnableUpgradeable.sol';
+import { PausableUpgradeable } from 'openzeppelin-contracts-upgradeable/security/PausableUpgradeable.sol';
+import { ReentrancyGuardUpgradeable } from 'openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol';
 import { toDaysWadUnsafe } from "solmate/utils/SignedWadMath.sol";
 
-contract LilVRGDA is ILilVRGDA, LinearVRGDA, Pausable, ReentrancyGuard, Ownable {
+contract LilVRGDA is ILilVRGDA, PausableUpgradeable, ReentrancyGuardUpgradeable, OwnableUpgradeable, LinearVRGDAUpgradeable {
     // The very next nounID that will be minted on auction,
     // equal to total number sold + 1
     uint256 public nextNounId;
 
     // Time of sale of the first lilNoun, used to calculate VRGDA price
-    uint256 public immutable startTime;
+    uint256 public startTime;
 
     // How often the VRGDA price will update to reflect VRGDA pricing rules
-    uint256 public immutable updateInterval = 15 minutes;
+    uint256 public updateInterval = 15 minutes;
 
     // The minimum price accepted in an auction
     uint256 public reservePrice;
 
     // The WETH contract address
-    address public immutable wethAddress;
+    address public wethAddress;
 
     // The Nouns ERC721 token contract
-    NounsToken public immutable nounsToken;
+    NounsToken public nounsToken;
 
-    constructor(
+    function initialize(
         int256 _targetPrice,
         int256 _priceDecayPercent,
         int256 _perTimeUnit,
@@ -42,7 +42,12 @@ contract LilVRGDA is ILilVRGDA, LinearVRGDA, Pausable, ReentrancyGuard, Ownable 
         address _nounsTokenAddress,
         address _wethAddress,
         uint256 _reservePrice
-    ) LinearVRGDA(_targetPrice, _priceDecayPercent, _perTimeUnit) {
+    ) external initializer {
+        __LinearVRGDA_init(_targetPrice, _priceDecayPercent, _perTimeUnit);
+        __Pausable_init();
+        __ReentrancyGuard_init();
+        __Ownable_init();
+
         nounsToken = NounsToken(_nounsTokenAddress);
         nextNounId = _nextNounId;
         startTime = _startTime;
