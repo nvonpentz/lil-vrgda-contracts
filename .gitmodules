@@ -1,9 +1,6 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
-[submodule "lib/VRGDAs"]
-	path = lib/VRGDAs
-	url = https://github.com/transmissions11/VRGDAs
 [submodule "lib/lilnouns-monorepo"]
 	path = lib/lilnouns-monorepo
 	url = https://github.com/lilnounsDAO/lilnouns-monorepo
