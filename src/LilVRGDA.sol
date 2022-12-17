@@ -1,19 +1,24 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import { INounsSeeder } from "lil-nouns-contracts/interfaces/INounsSeeder.sol";
-import { INounsDescriptor } from "lil-nouns-contracts/interfaces/INounsDescriptor.sol";
-import { ILilVRGDA } from "./interfaces/ILilVRGDA.sol";
-import { IWETH } from "lil-nouns-contracts/interfaces/IWETH.sol";
-import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import { LinearVRGDAUpgradeable } from "VRGDAs/LinearVRGDAUpgradeable.sol";
-import { NounsToken } from "lil-nouns-contracts/NounsToken.sol";
-import { OwnableUpgradeable } from 'openzeppelin-contracts-upgradeable/access/OwnableUpgradeable.sol';
-import { PausableUpgradeable } from 'openzeppelin-contracts-upgradeable/security/PausableUpgradeable.sol';
-import { ReentrancyGuardUpgradeable } from 'openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol';
-import { toDaysWadUnsafe } from "solmate/utils/SignedWadMath.sol";
+import {INounsSeeder} from "lil-nouns-contracts/interfaces/INounsSeeder.sol";
+import {INounsDescriptor} from "lil-nouns-contracts/interfaces/INounsDescriptor.sol";
+import {ILilVRGDA} from "./interfaces/ILilVRGDA.sol";
+import {IWETH} from "lil-nouns-contracts/interfaces/IWETH.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {VRGDA} from "VRGDAs/libs/VRGDA.sol";
+import {NounsToken} from "lil-nouns-contracts/NounsToken.sol";
+import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {PausableUpgradeable} from "openzeppelin-contracts-upgradeable/security/PausableUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import {toWadUnsafe, toDaysWadUnsafe, wadLn} from "solmate/utils/SignedWadMath.sol";
 
-contract LilVRGDA is ILilVRGDA, PausableUpgradeable, ReentrancyGuardUpgradeable, OwnableUpgradeable, LinearVRGDAUpgradeable {
+contract LilVRGDA is
+    ILilVRGDA,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    OwnableUpgradeable
+{
     // The very next nounID that will be minted on auction,
     // equal to total number sold + 1
     uint256 public nextNounId;
@@ -33,6 +38,18 @@ contract LilVRGDA is ILilVRGDA, PausableUpgradeable, ReentrancyGuardUpgradeable,
     // The Nouns ERC721 token contract
     NounsToken public nounsToken;
 
+    /// @notice Target price for a token, to be scaled according to sales pace.
+    /// @dev Represented as an 18 decimal fixed point number.
+    int256 public targetPrice;
+
+    /// @dev Precomputed constant that allows us to rewrite a pow() as an exp().
+    /// @dev Represented as an 18 decimal fixed point number.
+    int256 internal decayConstant;
+
+    /// @dev The total number of tokens to target selling every full unit of time.
+    /// @dev Represented as an 18 decimal fixed point number.
+    int256 internal perTimeUnit;
+
     function initialize(
         int256 _targetPrice,
         int256 _priceDecayPercent,
@@ -43,7 +60,6 @@ contract LilVRGDA is ILilVRGDA, PausableUpgradeable, ReentrancyGuardUpgradeable,
         address _wethAddress,
         uint256 _reservePrice
     ) external initializer {
-        __LinearVRGDA_init(_targetPrice, _priceDecayPercent, _perTimeUnit);
         __Pausable_init();
         __ReentrancyGuard_init();
         __Ownable_init();
@@ -53,25 +69,34 @@ contract LilVRGDA is ILilVRGDA, PausableUpgradeable, ReentrancyGuardUpgradeable,
         startTime = _startTime;
         wethAddress = _wethAddress;
         reservePrice = _reservePrice;
+
+        targetPrice = _targetPrice;
+        decayConstant = wadLn(1e18 - _priceDecayPercent);
+        require(decayConstant < 0, "NON_NEGATIVE_DECAY_CONSTANT");
+
+        perTimeUnit = _perTimeUnit;
     }
 
-    function settleAuction(uint256 expectedNounId, bytes32 expectedParentBlockhash)
-        external
-        payable
-        override
-        whenNotPaused
-        nonReentrant
-    {
+    function settleAuction(
+        uint256 expectedNounId,
+        bytes32 expectedParentBlockhash
+    ) external payable override whenNotPaused nonReentrant {
         // Only settle if desired Noun would be minted
         bytes32 parentBlockhash = blockhash(block.number - 1);
-        require(expectedParentBlockhash == parentBlockhash, 'Invalid or expired blockhash');
+        require(
+            expectedParentBlockhash == parentBlockhash,
+            "Invalid or expired blockhash"
+        );
         uint256 _nextNounIdForCaller = nextNounIdForCaller();
-        require(expectedNounId == _nextNounIdForCaller, 'Invalid or expired nounId');
-        require(msg.value >= reservePrice, 'Below reservePrice');
+        require(
+            expectedNounId == _nextNounIdForCaller,
+            "Invalid or expired nounId"
+        );
+        require(msg.value >= reservePrice, "Below reservePrice");
 
         // Validate the purchase request against the VRGDA rules.
         uint256 price = getCurrentVRGDAPrice();
-        require(msg.value >= price, 'Insufficient funds');
+        require(msg.value >= price, "Insufficient funds");
 
         // Call settleAuction on the nouns contract.
         uint256 mintedNounId = nounsToken.mint();
@@ -167,9 +192,20 @@ contract LilVRGDA is ILilVRGDA, PausableUpgradeable, ReentrancyGuardUpgradeable,
     function getCurrentVRGDAPrice() public view returns (uint256) {
         uint256 absoluteTimeSinceStart = block.timestamp - startTime;
         return
-            getVRGDAPrice(
-                toDaysWadUnsafe(absoluteTimeSinceStart - (absoluteTimeSinceStart % updateInterval)),
-                nextNounId
+            VRGDA.getVRGDAPrice(
+                toDaysWadUnsafe(
+                    absoluteTimeSinceStart -
+                        (absoluteTimeSinceStart % updateInterval)
+                ),
+                targetPrice,
+                decayConstant,
+                // Theoretically calling toWadUnsafe with sold can silently overflow but under
+                // any reasonable circumstance it will never be large enough. We use sold + 1 as
+                // the VRGDA formula's n param represents the nth token and sold is the n-1th token.
+                VRGDA.getTargetSaleTimeLinear(
+                    toWadUnsafe(nextNounId + 1),
+                    perTimeUnit
+                )
             );
     }
 
@@ -193,7 +229,7 @@ contract LilVRGDA is ILilVRGDA, PausableUpgradeable, ReentrancyGuardUpgradeable,
      */
     function _safeTransferETHWithFallback(address to, uint256 amount) internal {
         if (!_safeTransferETH(to, amount)) {
-            IWETH(wethAddress).deposit{ value: amount }();
+            IWETH(wethAddress).deposit{value: amount}();
             IERC20(wethAddress).transfer(to, amount);
         }
     }
@@ -202,8 +238,11 @@ contract LilVRGDA is ILilVRGDA, PausableUpgradeable, ReentrancyGuardUpgradeable,
      * @notice Transfer ETH and return the success status.
      * @dev This function only forwards 30,000 gas to the callee.
      */
-    function _safeTransferETH(address to, uint256 value) internal returns (bool) {
-        (bool success, ) = to.call{ value: value, gas: 30_000 }(new bytes(0));
+    function _safeTransferETH(
+        address to,
+        uint256 value
+    ) internal returns (bool) {
+        (bool success, ) = to.call{value: value, gas: 30_000}(new bytes(0));
         return success;
     }
 }
