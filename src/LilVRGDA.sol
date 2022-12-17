@@ -106,6 +106,16 @@ contract LilVRGDA is ILilVRGDA, PausableUpgradeable, ReentrancyGuardUpgradeable,
     }
 
     /**
+     * @notice Set the auction reserve price.
+     * @dev Only callable by the owner.
+     */
+    function setUpdateInterval(uint256 _updateInterval) external onlyOwner {
+        updateInterval = _updateInterval;
+
+        emit AuctionUpdateIntervalUpdated(_updateInterval);
+    }
+
+    /**
      * @notice Pause the LilVRGDA auction.
      * @dev This function can only be called by the owner when the
      * contract is unpaused. No new auctions can be started when paused.

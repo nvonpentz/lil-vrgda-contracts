@@ -163,6 +163,18 @@ contract LilVRGDATest is LilNounsUnitTest {
         vrgda.settleAuction{ value: 1 ether }(nounId, hash);
     }
 
+    function testSetUpdateInterval() public {
+        // Non owners cannot set updateInterval
+        vm.prank(address(999));
+        vm.expectRevert('Ownable: caller is not the owner');
+        vrgda.setUpdateInterval(1 minutes);
+
+        // Owners can set updateInterval
+        vm.prank(nounsDAOAddress); // Call as owner
+        vrgda.setUpdateInterval(1 minutes);
+        assertEq(vrgda.updateInterval(), 1 minutes);
+    }
+
     function testPause() public {
         // Contract should not be paused to start
         assertFalse(vrgda.paused());
