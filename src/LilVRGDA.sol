@@ -145,7 +145,8 @@ contract LilVRGDA is ILilVRGDA, PausableUpgradeable, ReentrancyGuardUpgradeable,
         svg = descriptor.generateSVGImage(seed);
 
         // Calculate price based on VRGDA rules.
-        price = getCurrentVRGDAPrice();
+        uint256 vrgdaPrice = getCurrentVRGDAPrice();
+        price = vrgdaPrice > reservePrice ? vrgdaPrice : reservePrice;
 
         // Fetch the blockhash associated with this noun.
         hash = blockhash(block.number - 1);

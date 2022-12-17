@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 import { LilVRGDA } from '../src/LilVRGDA.sol';
 
 import { LilNounsUnitTest } from './helpers/LilNounsUnitTest.sol';
+// import { console } from 'forge-std/console.sol';
 
 // MockWETHReceiver can call settleAuction,
 // but does not support receiving ether (for refunds)
@@ -141,26 +142,25 @@ contract LilVRGDATest is LilNounsUnitTest {
     }
 
     function testReservePrice() public {
-        uint256 reservePrice = 1 ether;
-        vm.prank(nounsDAOAddress); // Call as owner
-        vrgda.setReservePrice(reservePrice);
-        (uint256 nounId, , , uint256 price, bytes32 hash) = vrgda.fetchNextNoun();
-
-        // Only the owner should be able to set reservePrice
+        // Non owners cannot set reservePrice
         vm.prank(address(999));
         vm.expectRevert('Ownable: caller is not the owner');
-        vrgda.setReservePrice(reservePrice);
+        vrgda.setReservePrice(1 ether);
+
+        // Owners can set reservePrice
+        vm.prank(nounsDAOAddress); // Call as owner
+        vrgda.setReservePrice(1 ether);
+        (uint256 nounId, , , , bytes32 hash) = vrgda.fetchNextNoun();
 
         // Should revert if supplied price is not high enough
         vm.prank(address(this));
         vm.expectRevert('Below reservePrice');
-        assertGt(reservePrice, price);
-        vrgda.settleAuction{ value: price }(nounId, hash);
+        vrgda.settleAuction{ value: 1 ether - 1 }(nounId, hash);
 
         // Should be able to settle the auction once reserve price is lowered
         vm.prank(nounsDAOAddress); // Call as owner
-        vrgda.setReservePrice(price);
-        vrgda.settleAuction{ value: price }(nounId, hash);
+        vrgda.setReservePrice(0.5 ether);
+        vrgda.settleAuction{ value: 1 ether }(nounId, hash);
     }
 
     function testPause() public {
