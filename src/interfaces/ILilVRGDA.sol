@@ -6,6 +6,9 @@ interface ILilVRGDA {
     event AuctionSettled(uint256 indexed nounId, address winner, uint256 amount);
     event AuctionReservePriceUpdated(uint256 reservePrice);
     event AuctionUpdateIntervalUpdated(uint256 updateInterval);
+    event AuctionTargetPriceUpdated(int256 targetPrice);
+    event AuctionPriceDecayPercentUpdated(int256 priceDecayPercent);
+    event AuctionPerTimeUnitUpdated(int256 perTimeUnit);
 
     function settleAuction(uint256 nounId, bytes32 expectedParentBlockhash) external payable;
     function fetchNextNoun() external view returns (

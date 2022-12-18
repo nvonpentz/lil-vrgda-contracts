@@ -44,11 +44,11 @@ contract LilVRGDA is
 
     /// @dev Precomputed constant that allows us to rewrite a pow() as an exp().
     /// @dev Represented as an 18 decimal fixed point number.
-    int256 internal decayConstant;
+    int256 public decayConstant;
 
     /// @dev The total number of tokens to target selling every full unit of time.
     /// @dev Represented as an 18 decimal fixed point number.
-    int256 internal perTimeUnit;
+    int256 public perTimeUnit;
 
     function initialize(
         int256 _targetPrice,
@@ -131,13 +131,46 @@ contract LilVRGDA is
     }
 
     /**
-     * @notice Set the auction reserve price.
+     * @notice Set the auction update interval.
      * @dev Only callable by the owner.
      */
     function setUpdateInterval(uint256 _updateInterval) external onlyOwner {
         updateInterval = _updateInterval;
 
         emit AuctionUpdateIntervalUpdated(_updateInterval);
+    }
+
+    /**
+     * @notice Set the auction target price.
+     * @dev Only callable by the owner.
+     */
+    function setTargetPrice(int256 _targetPrice) external onlyOwner {
+        targetPrice = _targetPrice;
+
+        emit AuctionTargetPriceUpdated(_targetPrice);
+    }
+
+    /**
+     * @notice Set the auction price decay percent.
+     * @dev Only callable by the owner.
+     */
+    function setPriceDecayPercent(
+        int256 _priceDecayPercent
+    ) external onlyOwner {
+        decayConstant = wadLn(1e18 - _priceDecayPercent);
+        require(decayConstant < 0, "NON_NEGATIVE_DECAY_CONSTANT");
+
+        emit AuctionPriceDecayPercentUpdated(_priceDecayPercent);
+    }
+
+    /**
+     * @notice Set the auction per time unit.
+     * @dev Only callable by the owner.
+     */
+    function setPerTimeUnit(int256 _perTimeUnit) external onlyOwner {
+        perTimeUnit = _perTimeUnit;
+
+        emit AuctionPerTimeUnitUpdated(_perTimeUnit);
     }
 
     /**

@@ -175,6 +175,44 @@ contract LilVRGDATest is LilNounsUnitTest {
         assertEq(vrgda.updateInterval(), 1 minutes);
     }
 
+    function testSetTargetPrice() public {
+        // Non owners cannot set targetPrice
+        vm.prank(address(999));
+        vm.expectRevert('Ownable: caller is not the owner');
+        vrgda.setTargetPrice(1 ether);
+
+        // Owners can set targetPrice
+        vm.prank(nounsDAOAddress); // Call as owner
+        vrgda.setTargetPrice(1 ether);
+        assertEq(vrgda.targetPrice(), 1 ether);
+    }
+
+    function testSetPriceDecayPercent() public {
+        int256 initialDecayConstant = vrgda.decayConstant();
+
+        // Non owners cannot set priceDecayPercent
+        vm.prank(address(999));
+        vm.expectRevert('Ownable: caller is not the owner');
+        vrgda.setPriceDecayPercent(1);
+
+        // Owners can set priceDecayPercent
+        vm.prank(nounsDAOAddress); // Call as owner
+        vrgda.setPriceDecayPercent(1);
+        assertFalse(vrgda.decayConstant() == initialDecayConstant);
+    }
+
+    function testSetPerTimeUnit() public {
+        // Non owners cannot set perTimeUnit
+        vm.prank(address(999));
+        vm.expectRevert('Ownable: caller is not the owner');
+        vrgda.setPerTimeUnit(1);
+
+        // Owners can set perTimeUnit
+        vm.prank(nounsDAOAddress); // Call as owner
+        vrgda.setPerTimeUnit(1);
+        assertEq(vrgda.perTimeUnit(), 1);
+    }
+
     function testPause() public {
         // Contract should not be paused to start
         assertFalse(vrgda.paused());
