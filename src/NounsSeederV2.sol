@@ -88,7 +88,7 @@ contract NounsSeederV2 is INounsSeederV2 {
     function roundToNearest(
         uint256 blockNumber,
         uint32 interval
-    ) internal pure returns (uint256) {
+    ) internal view returns (uint256) { // TODO pure
         return blockNumber - (blockNumber % interval);
     }
 }

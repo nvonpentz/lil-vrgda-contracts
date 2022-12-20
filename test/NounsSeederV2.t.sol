@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-3.0
-import {console} from "hardhat/console.sol";
 import {Test} from "forge-std/Test.sol";
 import {INounsSeeder} from "lil-nouns-contracts/interfaces/INounsSeeder.sol";
 import {NounsSeederV2} from "../src/NounsSeederV2.sol";

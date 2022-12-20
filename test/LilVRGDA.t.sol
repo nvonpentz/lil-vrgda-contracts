@@ -2,10 +2,7 @@
 pragma solidity ^0.8.17;
 
 import {LilVRGDA} from "../src/LilVRGDA.sol";
-
 import {LilNounsUnitTest} from "./helpers/LilNounsUnitTest.sol";
-
-// import { console } from 'forge-std/console.sol';
 
 // MockWETHReceiver can call settleAuction,
 // but does not support receiving ether (for refunds)
