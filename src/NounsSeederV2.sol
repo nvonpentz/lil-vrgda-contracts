@@ -25,7 +25,7 @@ import {NounsToken} from "lil-nouns-contracts/NounsToken.sol";
 // determining how long a noun updates
 contract NounsSeederV2 is INounsSeederV2 {
     NounsToken nounsToken;
-    uint32 public updateInterval = 1;
+    uint32 internal updateInterval = 1;
 
     // Constructor sets the NounsToken from the address
     constructor(address _nounsTokenAddress) {
@@ -72,29 +72,23 @@ contract NounsSeederV2 is INounsSeederV2 {
             msg.sender == nounsToken.owner(),
             "Caller is not the owner of nouns token"
         );
+        require(_updateInterval > 0, "Update interval must be greater than 0");
         updateInterval = _updateInterval;
 
         emit UpdateIntervalUpdated(_updateInterval);
     }
 
-    // Rounding function
-    function roundToNearest(
-        uint256 x,
-        uint32 multiple
-    ) internal pure returns (uint256) {
-        // Calculate the remainder when x is divided by multiple
-        uint256 remainder = x % multiple;
+    // @notice Get the update interval for the nouns token
+    function getUpdateInterval() external view returns (uint32) {
+        return updateInterval;
+    }
 
-        // If the remainder is less than half of the multiple,
-        // subtract the remainder from x to round down to the nearest multiple
-        if (remainder <= multiple / 2) {
-            x -= remainder;
-        }
-        // Otherwise, add the difference between the multiple and the remainder
-        // to x to round up to the nearest multiple
-        else {
-            x += multiple - remainder;
-        }
-        return x;
+    // @notice Calculate the nearest block number less than or equal to the given block number
+    // that is a multiple of the update interval
+    function roundToNearest(
+        uint256 blockNumber,
+        uint32 interval
+    ) internal pure returns (uint256) {
+        return blockNumber - (blockNumber % interval);
     }
 }
