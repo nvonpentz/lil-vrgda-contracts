@@ -16,11 +16,11 @@ contract NounsSeederV2UnitTest is LilNounsUnitTest {
             int256(targetPrice), // Target price.
             0.31e18, // Price decay percent.
             24 * 4 * 1e18, // Per time unit.
-            block.timestamp, // auction start time
+            block.timestamp, // Auction start time
             0 // reservePrice
         );
         populateDescriptor();
-        // set block number to 7
+        // set block number
         vm.roll(1000);
     }
 
