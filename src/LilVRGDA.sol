@@ -75,6 +75,7 @@ contract LilVRGDA is
 
         perTimeUnit = _perTimeUnit;
     }
+
     /// @notice Settle the auction
     /// @param expectedNounId The nounId that is expected to be minted
     /// @param expectedParentBlockhash The parent blockhash expected when
@@ -238,7 +239,7 @@ contract LilVRGDA is
                 )
             );
     }
-    
+
     /// @notice Get the next nounId that would be minted for the caller (skips over reserved nouns)
     /// @dev handles edge case in nouns token contract
     /// @return The next nounId that would be minted for the caller
