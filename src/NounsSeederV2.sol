@@ -17,9 +17,9 @@
 
 pragma solidity ^0.8.17;
 
-import { INounsSeederV2 } from './interfaces/INounsSeederV2.sol';
-import { INounsDescriptor } from 'lil-nouns-contracts/interfaces/INounsDescriptor.sol';
-import { NounsToken } from 'lil-nouns-contracts/NounsToken.sol';
+import {INounsSeederV2} from "./interfaces/INounsSeederV2.sol";
+import {INounsDescriptor} from "lil-nouns-contracts/interfaces/INounsDescriptor.sol";
+import {NounsToken} from "lil-nouns-contracts/NounsToken.sol";
 
 // Same as NounsSeederV1 except it can has a configurable updateInterval variable
 // determining how long a noun updates
@@ -35,11 +35,18 @@ contract NounsSeederV2 is INounsSeederV2 {
     /**
      * @notice Generate a pseudo-random Noun seed using the previous blockhash and noun ID.
      */
-    // prettier-ignore
-    function generateSeed(uint256 nounId, INounsDescriptor descriptor) external view override returns (Seed memory) {
+    function generateSeed(
+        uint256 nounId,
+        INounsDescriptor descriptor
+    ) external view override returns (Seed memory) {
         // Calculate pseudo-random seed using the previous blockhash and noun ID considering the update interval
         uint256 pseudorandomness = uint256(
-            keccak256(abi.encodePacked(blockhash(roundToNearest(block.number, updateInterval) - 1), nounId))
+            keccak256(
+                abi.encodePacked(
+                    blockhash(roundToNearest(block.number, updateInterval) - 1),
+                    nounId
+                )
+            )
         );
 
         uint256 backgroundCount = descriptor.backgroundCount();
@@ -48,34 +55,33 @@ contract NounsSeederV2 is INounsSeederV2 {
         uint256 headCount = descriptor.headCount();
         uint256 glassesCount = descriptor.glassesCount();
 
-        return Seed({
-            background: uint48(
-                uint48(pseudorandomness) % backgroundCount
-            ),
-            body: uint48(
-                uint48(pseudorandomness >> 48) % bodyCount
-            ),
-            accessory: uint48(
-                uint48(pseudorandomness >> 96) % accessoryCount
-            ),
-            head: uint48(
-                uint48(pseudorandomness >> 144) % headCount
-            ),
-            glasses: uint48(
-                uint48(pseudorandomness >> 192) % glassesCount
-            )
-        });
+        return
+            Seed({
+                background: uint48(uint48(pseudorandomness) % backgroundCount),
+                body: uint48(uint48(pseudorandomness >> 48) % bodyCount),
+                accessory: uint48(
+                    uint48(pseudorandomness >> 96) % accessoryCount
+                ),
+                head: uint48(uint48(pseudorandomness >> 144) % headCount),
+                glasses: uint48(uint48(pseudorandomness >> 192) % glassesCount)
+            });
     }
 
     function setUpdateInterval(uint32 _updateInterval) external {
-        require(msg.sender == nounsToken.owner(), 'Caller is not the owner of nouns token');
+        require(
+            msg.sender == nounsToken.owner(),
+            "Caller is not the owner of nouns token"
+        );
         updateInterval = _updateInterval;
 
         emit UpdateIntervalUpdated(_updateInterval);
     }
 
     // Rounding function
-    function roundToNearest(uint256 x, uint32 multiple) internal pure returns (uint256) {
+    function roundToNearest(
+        uint256 x,
+        uint32 multiple
+    ) internal pure returns (uint256) {
         // Calculate the remainder when x is divided by multiple
         uint256 remainder = x % multiple;
 
@@ -92,4 +98,3 @@ contract NounsSeederV2 is INounsSeederV2 {
         return x;
     }
 }
-

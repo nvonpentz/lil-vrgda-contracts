@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import { LilVRGDA } from '../src/LilVRGDA.sol';
+import {LilVRGDA} from "../src/LilVRGDA.sol";
 
-import { LilNounsUnitTest } from './helpers/LilNounsUnitTest.sol';
+import {LilNounsUnitTest} from "./helpers/LilNounsUnitTest.sol";
+
 // import { console } from 'forge-std/console.sol';
 
 // MockWETHReceiver can call settleAuction,
@@ -16,8 +17,14 @@ contract MockWETHReceiver {
         vrgda = LilVRGDA(_lilVRGDAAddress);
     }
 
-    function callSettleAuction(uint256 expectedNounId, bytes32 expectedParentBlockhash) external payable {
-        vrgda.settleAuction{ value: msg.value }(expectedNounId, expectedParentBlockhash);
+    function callSettleAuction(
+        uint256 expectedNounId,
+        bytes32 expectedParentBlockhash
+    ) external payable {
+        vrgda.settleAuction{value: msg.value}(
+            expectedNounId,
+            expectedParentBlockhash
+        );
     }
 }
 
@@ -47,10 +54,11 @@ contract LilVRGDATest is LilNounsUnitTest {
 
         // Caller should own no nouns at start.
         assertEq(nounsToken.balanceOf(address(this)), 0);
-        (uint256 nounId, , , uint256 price, bytes32 hash) = vrgda.fetchNextNoun();
+        (uint256 nounId, , , uint256 price, bytes32 hash) = vrgda
+            .fetchNextNoun();
 
         vm.expectEmit(false, true, true, true); // TODO not sure if this is working as expected
-        vrgda.settleAuction{ value: price }(nounId, hash);
+        vrgda.settleAuction{value: price}(nounId, hash);
 
         // A noun should have been minted to nounders
         assertEq(nounsToken.ownerOf(initialNextNounId), noundersDAOAddress);
@@ -76,22 +84,23 @@ contract LilVRGDATest is LilNounsUnitTest {
         assertEq(weth.balanceOf(address(this)), 0);
 
         // Attempts to mint the same noun this block should fail
-        vm.expectRevert('Invalid or expired nounId');
+        vm.expectRevert("Invalid or expired nounId");
         vrgda.settleAuction(nounId, hash);
 
         // However, attempts to mint using the next ID with the same hash should pass 👀
         (uint256 newNounId, , , uint256 newPrice, ) = vrgda.fetchNextNoun(); // Fetch updated NounId and price after earlier sale
         assertEq(newNounId, nounId + 1);
         assertGt(newPrice, price);
-        vrgda.settleAuction{ value: newPrice }(newNounId, hash); // Note: hash unchanged
+        vrgda.settleAuction{value: newPrice}(newNounId, hash); // Note: hash unchanged
     }
 
     function testSettleAuctionOverageRefund() public {
         uint256 initialBalance = address(this).balance;
-        (uint256 nounId, , , uint256 price, bytes32 hash) = vrgda.fetchNextNoun();
+        (uint256 nounId, , , uint256 price, bytes32 hash) = vrgda
+            .fetchNextNoun();
         assertGt(price, 0);
         uint256 overage = 1 ether;
-        vrgda.settleAuction{ value: price + overage }(nounId, hash);
+        vrgda.settleAuction{value: price + overage}(nounId, hash);
         assertEq(nounsToken.ownerOf(nounId), address(this));
 
         // Value equal to the auction price should be transferred to DAO
@@ -109,10 +118,11 @@ contract LilVRGDATest is LilNounsUnitTest {
 
     function testSettleAuctionOverageRefundWETH() public {
         MockWETHReceiver wethReceiver = new MockWETHReceiver(address(vrgda));
-        (uint256 nounId, , , uint256 price, bytes32 hash) = vrgda.fetchNextNoun();
+        (uint256 nounId, , , uint256 price, bytes32 hash) = vrgda
+            .fetchNextNoun();
 
         uint256 overage = 1 ether;
-        wethReceiver.callSettleAuction{ value: price + overage }(nounId, hash);
+        wethReceiver.callSettleAuction{value: price + overage}(nounId, hash);
         assertEq(address(wethReceiver).balance, 0);
         assertEq(weth.balanceOf(address(wethReceiver)), overage);
     }
@@ -121,30 +131,32 @@ contract LilVRGDATest is LilNounsUnitTest {
         (uint256 nounId, , , uint256 price, ) = vrgda.fetchNextNoun();
 
         // Should revert if incorrect blockhash supplied
-        vm.expectRevert('Invalid or expired blockhash');
-        vrgda.settleAuction{ value: price }(nounId, keccak256(unicode'⌐◨-◨ '));
+        vm.expectRevert("Invalid or expired blockhash");
+        vrgda.settleAuction{value: price}(nounId, keccak256(unicode"⌐◨-◨ "));
     }
 
     function testSettleAuctionExpiredNounId() public {
-        (uint256 nounId, , , uint256 price, bytes32 hash) = vrgda.fetchNextNoun();
+        (uint256 nounId, , , uint256 price, bytes32 hash) = vrgda
+            .fetchNextNoun();
 
         // Should revert if incorrect nounId supplied
-        vm.expectRevert('Invalid or expired nounId');
-        vrgda.settleAuction{ value: price }(nounId + 1, hash);
+        vm.expectRevert("Invalid or expired nounId");
+        vrgda.settleAuction{value: price}(nounId + 1, hash);
     }
 
     function testSettleAuctionInsufficientFunds() public {
-        (uint256 nounId, , , uint256 price, bytes32 hash) = vrgda.fetchNextNoun();
+        (uint256 nounId, , , uint256 price, bytes32 hash) = vrgda
+            .fetchNextNoun();
 
         // Should revert if value supplied is lower than VRGDA price
-        vm.expectRevert('Insufficient funds');
-        vrgda.settleAuction{ value: price - 1 }(nounId, hash);
+        vm.expectRevert("Insufficient funds");
+        vrgda.settleAuction{value: price - 1}(nounId, hash);
     }
 
     function testReservePrice() public {
         // Non owners cannot set reservePrice
         vm.prank(address(999));
-        vm.expectRevert('Ownable: caller is not the owner');
+        vm.expectRevert("Ownable: caller is not the owner");
         vrgda.setReservePrice(1 ether);
 
         // Owners can set reservePrice
@@ -154,19 +166,19 @@ contract LilVRGDATest is LilNounsUnitTest {
 
         // Should revert if supplied price is not high enough
         vm.prank(address(this));
-        vm.expectRevert('Below reservePrice');
-        vrgda.settleAuction{ value: 1 ether - 1 }(nounId, hash);
+        vm.expectRevert("Below reservePrice");
+        vrgda.settleAuction{value: 1 ether - 1}(nounId, hash);
 
         // Should be able to settle the auction once reserve price is lowered
         vm.prank(nounsDAOAddress); // Call as owner
         vrgda.setReservePrice(0.5 ether);
-        vrgda.settleAuction{ value: 1 ether }(nounId, hash);
+        vrgda.settleAuction{value: 1 ether}(nounId, hash);
     }
 
     function testSetUpdateInterval() public {
         // Non owners cannot set updateInterval
         vm.prank(address(999));
-        vm.expectRevert('Ownable: caller is not the owner');
+        vm.expectRevert("Ownable: caller is not the owner");
         vrgda.setUpdateInterval(1 minutes);
 
         // Owners can set updateInterval
@@ -178,7 +190,7 @@ contract LilVRGDATest is LilNounsUnitTest {
     function testSetTargetPrice() public {
         // Non owners cannot set targetPrice
         vm.prank(address(999));
-        vm.expectRevert('Ownable: caller is not the owner');
+        vm.expectRevert("Ownable: caller is not the owner");
         vrgda.setTargetPrice(1 ether);
 
         // Owners can set targetPrice
@@ -192,7 +204,7 @@ contract LilVRGDATest is LilNounsUnitTest {
 
         // Non owners cannot set priceDecayPercent
         vm.prank(address(999));
-        vm.expectRevert('Ownable: caller is not the owner');
+        vm.expectRevert("Ownable: caller is not the owner");
         vrgda.setPriceDecayPercent(1);
 
         // Owners can set priceDecayPercent
@@ -204,7 +216,7 @@ contract LilVRGDATest is LilNounsUnitTest {
     function testSetPerTimeUnit() public {
         // Non owners cannot set perTimeUnit
         vm.prank(address(999));
-        vm.expectRevert('Ownable: caller is not the owner');
+        vm.expectRevert("Ownable: caller is not the owner");
         vrgda.setPerTimeUnit(1);
 
         // Owners can set perTimeUnit
@@ -219,7 +231,7 @@ contract LilVRGDATest is LilNounsUnitTest {
 
         // Non owners can't pause
         vm.prank(address(999));
-        vm.expectRevert('Ownable: caller is not the owner');
+        vm.expectRevert("Ownable: caller is not the owner");
         vrgda.pause();
 
         // Owner can pause
@@ -227,9 +239,10 @@ contract LilVRGDATest is LilNounsUnitTest {
         vrgda.pause();
 
         // settleAuction should fail if paused
-        (uint256 nounId, , , uint256 price, bytes32 hash) = vrgda.fetchNextNoun();
-        vm.expectRevert('Pausable: paused');
-        vrgda.settleAuction{ value: price }(nounId, hash);
+        (uint256 nounId, , , uint256 price, bytes32 hash) = vrgda
+            .fetchNextNoun();
+        vm.expectRevert("Pausable: paused");
+        vrgda.settleAuction{value: price}(nounId, hash);
     }
 
     // function testFetchNextNoun() public {} // TODO in fork test
@@ -237,13 +250,15 @@ contract LilVRGDATest is LilNounsUnitTest {
 
     function testRejectsEther() public {
         // VRGDA contract should transactions with ether value with calldata sent to fallback
-        vm.expectRevert('Revert');
-        (bool sent, ) = payable(address(vrgda)).call{ value: 1 ether }('calldata');
+        vm.expectRevert("Revert");
+        (bool sent, ) = payable(address(vrgda)).call{value: 1 ether}(
+            "calldata"
+        );
         assertFalse(sent);
 
         // VRGDA contract should transactions with ether value and no calldata sent to fallback
-        vm.expectRevert('revert');
-        (sent, ) = payable(address(vrgda)).call{ value: 1 ether }(new bytes(0));
+        vm.expectRevert("revert");
+        (sent, ) = payable(address(vrgda)).call{value: 1 ether}(new bytes(0));
         assertFalse(sent);
         // TODO document why these cases are different
     }

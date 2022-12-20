@@ -1,7 +1,7 @@
-import { console } from 'hardhat/console.sol';
-import { INounsSeeder } from 'lil-nouns-contracts/interfaces/INounsSeeder.sol';
-import { NounsSeederV2 } from '../src/NounsSeederV2.sol';
-import { LilNounsUnitTest } from './helpers/LilNounsUnitTest.sol';
+import {console} from "hardhat/console.sol";
+import {INounsSeeder} from "lil-nouns-contracts/interfaces/INounsSeeder.sol";
+import {NounsSeederV2} from "../src/NounsSeederV2.sol";
+import {LilNounsUnitTest} from "./helpers/LilNounsUnitTest.sol";
 
 pragma solidity ^0.8.17;
 
@@ -24,7 +24,10 @@ contract NounsSeederV2UnitTest is LilNounsUnitTest {
         vm.roll(1000);
     }
 
-    function seedsEqual(INounsSeeder.Seed memory s1, INounsSeeder.Seed memory s2) internal pure returns (bool equal) {
+    function seedsEqual(
+        INounsSeeder.Seed memory s1,
+        INounsSeeder.Seed memory s2
+    ) internal pure returns (bool equal) {
         return
             s1.background == s2.background &&
             s1.body == s2.body &&
@@ -37,7 +40,7 @@ contract NounsSeederV2UnitTest is LilNounsUnitTest {
         seederV2 = new NounsSeederV2(address(nounsToken));
 
         // Should revert if caller is not the owner of nouns token
-        vm.expectRevert('Caller is not the owner of nouns token');
+        vm.expectRevert("Caller is not the owner of nouns token");
         vm.prank(address(555));
         seederV2.setUpdateInterval(100);
 
@@ -50,8 +53,14 @@ contract NounsSeederV2UnitTest is LilNounsUnitTest {
 
         // SeederV1 and SeederV2 should return the same seed when update interval=1 (default)
         for (uint256 i = 0; i < 1 * seederV2.updateInterval(); i++) {
-            INounsSeeder.Seed memory v1seed = seeder.generateSeed(initialNounId, descriptor);
-            INounsSeeder.Seed memory v2seed = seederV2.generateSeed(initialNounId, descriptor);
+            INounsSeeder.Seed memory v1seed = seeder.generateSeed(
+                initialNounId,
+                descriptor
+            );
+            INounsSeeder.Seed memory v2seed = seederV2.generateSeed(
+                initialNounId,
+                descriptor
+            );
             assertTrue(seedsEqual(v1seed, v2seed));
             vm.roll(block.number + 1);
         }
@@ -61,8 +70,14 @@ contract NounsSeederV2UnitTest is LilNounsUnitTest {
 
         // SeederV1 and SeederV2 should return the different seeds for odd blocks when update interval=2
         for (uint256 i = 0; i < 1 * seederV2.updateInterval(); i++) {
-            INounsSeeder.Seed memory v1seed = seeder.generateSeed(initialNounId, descriptor);
-            INounsSeeder.Seed memory v2seed = seederV2.generateSeed(initialNounId, descriptor);
+            INounsSeeder.Seed memory v1seed = seeder.generateSeed(
+                initialNounId,
+                descriptor
+            );
+            INounsSeeder.Seed memory v2seed = seederV2.generateSeed(
+                initialNounId,
+                descriptor
+            );
             if (block.number % 2 == 0) {
                 assertTrue(seedsEqual(v1seed, v2seed));
             } else {
@@ -72,4 +87,3 @@ contract NounsSeederV2UnitTest is LilNounsUnitTest {
         }
     }
 }
-
