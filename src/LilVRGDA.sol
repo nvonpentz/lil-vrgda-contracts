@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.17;
 
 import {INounsSeeder} from "lil-nouns-contracts/interfaces/INounsSeeder.sol";
