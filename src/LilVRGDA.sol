@@ -19,23 +19,23 @@ contract LilVRGDA is
     ReentrancyGuardUpgradeable,
     OwnableUpgradeable
 {
-    // The very next nounID that will be minted on auction,
-    // equal to total number sold + 1
+    /// @notice The very next nounID that will be minted on auction,
+    /// equal to total number sold + 1
     uint256 public nextNounId;
 
-    // Time of sale of the first lilNoun, used to calculate VRGDA price
+    /// @notice Time of sale of the first lilNoun, used to calculate VRGDA price
     uint256 public startTime;
 
-    // How often the VRGDA price will update to reflect VRGDA pricing rules
+    /// @notice How often the VRGDA price will update to reflect VRGDA pricing rules
     uint256 public updateInterval = 15 minutes;
 
-    // The minimum price accepted in an auction
+    /// @notice The minimum price accepted in an auction
     uint256 public reservePrice;
 
-    // The WETH contract address
+    /// @notice The WETH contract address
     address public wethAddress;
 
-    // The Nouns ERC721 token contract
+    /// @notice The Nouns ERC721 token contract
     NounsToken public nounsToken;
 
     /// @notice Target price for a token, to be scaled according to sales pace.
@@ -76,7 +76,10 @@ contract LilVRGDA is
 
         perTimeUnit = _perTimeUnit;
     }
-
+    /// @notice Settle the auction
+    /// @param expectedNounId The nounId that is expected to be minted
+    /// @param expectedParentBlockhash The parent blockhash expected when
+    /// transaction executes
     function settleAuction(
         uint256 expectedNounId,
         bytes32 expectedParentBlockhash
@@ -120,40 +123,32 @@ contract LilVRGDA is
         emit AuctionSettled(mintedNounId, msg.sender, price);
     }
 
-    /**
-     * @notice Set the auction reserve price.
-     * @dev Only callable by the owner.
-     */
+    /// @notice Set the auction reserve price.
+    /// @dev Only callable by the owner.
     function setReservePrice(uint256 _reservePrice) external onlyOwner {
         reservePrice = _reservePrice;
 
         emit AuctionReservePriceUpdated(_reservePrice);
     }
 
-    /**
-     * @notice Set the auction update interval.
-     * @dev Only callable by the owner.
-     */
+    /// @notice Set the auction update interval.
+    /// @dev Only callable by the owner.
     function setUpdateInterval(uint256 _updateInterval) external onlyOwner {
         updateInterval = _updateInterval;
 
         emit AuctionUpdateIntervalUpdated(_updateInterval);
     }
 
-    /**
-     * @notice Set the auction target price.
-     * @dev Only callable by the owner.
-     */
+    /// @notice Set the auction target price.
+    /// @dev Only callable by the owner.
     function setTargetPrice(int256 _targetPrice) external onlyOwner {
         targetPrice = _targetPrice;
 
         emit AuctionTargetPriceUpdated(_targetPrice);
     }
 
-    /**
-     * @notice Set the auction price decay percent.
-     * @dev Only callable by the owner.
-     */
+    /// @notice Set the auction price decay percent.
+    /// @dev Only callable by the owner.
     function setPriceDecayPercent(
         int256 _priceDecayPercent
     ) external onlyOwner {
@@ -163,34 +158,35 @@ contract LilVRGDA is
         emit AuctionPriceDecayPercentUpdated(_priceDecayPercent);
     }
 
-    /**
-     * @notice Set the auction per time unit.
-     * @dev Only callable by the owner.
-     */
+    /// @notice Set the auction per time unit.
+    /// @dev Only callable by the owner.
     function setPerTimeUnit(int256 _perTimeUnit) external onlyOwner {
         perTimeUnit = _perTimeUnit;
 
         emit AuctionPerTimeUnitUpdated(_perTimeUnit);
     }
 
-    /**
-     * @notice Pause the LilVRGDA auction.
-     * @dev This function can only be called by the owner when the
-     * contract is unpaused. No new auctions can be started when paused.
-     */
+    /// @notice Pause the LilVRGDA auction.
+    /// @dev This function can only be called by the owner when the contract is unpaused.
+    /// No new auctions can be started when paused.
     function pause() external override onlyOwner {
         _pause();
     }
 
-    /**
-     * @notice Unpause the LilVRGDA auction.
-     * @dev This function can only be called by the owner when the
-     * contract is paused.
-     */
+    /// @notice Unpause the LilVRGDA auction.
+    /// @dev This function can only be called by the owner when the contract is paused.
     function unpause() external override onlyOwner {
         _unpause();
     }
 
+    /// @notice Fetch data associated with the noun for sale
+    /// @dev This function should be called using the `pending` block tag.
+    /// @dev The nounId and hash should passed as arguments to the `settleAuction` function.
+    /// @return nounId The nounId that will be minted
+    /// @return seed The seed containing the noun attributes
+    /// @return svg The SVG image of the the noun
+    /// @return price The price of the noun in Wei
+    /// @return hash The expected parent blockhash for this noun
     function fetchNextNoun()
         external
         view
@@ -222,6 +218,8 @@ contract LilVRGDA is
         return (_nextNounIdForCaller, seed, svg, price, hash);
     }
 
+    /// @notice Get the current price according to the VRGDA rules.
+    /// @return price The current price in Wei
     function getCurrentVRGDAPrice() public view returns (uint256) {
         uint256 absoluteTimeSinceStart = block.timestamp - startTime;
         return
@@ -241,10 +239,10 @@ contract LilVRGDA is
                 )
             );
     }
-
-    /**
-     * @dev handles edge case in nouns token contract
-     */
+    
+    /// @notice Get the next nounId that would be minted for the caller (skips over reserved nouns)
+    /// @dev handles edge case in nouns token contract
+    /// @return The next nounId that would be minted for the caller
     function nextNounIdForCaller() public view returns (uint256) {
         // Calculate nounId that would be minted to the caller
         uint256 _nextNounIdForCaller = nextNounId;
@@ -257,9 +255,7 @@ contract LilVRGDA is
         return _nextNounIdForCaller;
     }
 
-    /**
-     * @notice Transfer ETH. If the ETH transfer fails, wrap the ETH and try send it as wethAddress.
-     */
+    /// @notice Transfer ETH. If the ETH transfer fails, wrap the ETH and try send it as wethAddress.
     function _safeTransferETHWithFallback(address to, uint256 amount) internal {
         if (!_safeTransferETH(to, amount)) {
             IWETH(wethAddress).deposit{value: amount}();
@@ -267,10 +263,8 @@ contract LilVRGDA is
         }
     }
 
-    /**
-     * @notice Transfer ETH and return the success status.
-     * @dev This function only forwards 30,000 gas to the callee.
-     */
+    /// @notice Transfer ETH and return the success status.
+    /// @dev This function only forwards 30,000 gas to the callee.
     function _safeTransferETH(
         address to,
         uint256 value
