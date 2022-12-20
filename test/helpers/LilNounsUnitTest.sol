@@ -36,11 +36,10 @@ contract LilNounsUnitTest is Test {
         int256 _targetPrice,
         int256 _priceDecayPercent,
         int256 _perTimeUnit,
-        uint256 _nextNounId, // Used for pricing
         uint256 _startTime,
         uint256 _reservePrice
     ) public {
-        address oldMinterAddress = address(3); // TODO
+        address oldMinterAddress = address(3);
         address proxyRegistryAddress = address(11);
 
         proxyRegistry = IProxyRegistry(proxyRegistryAddress);
@@ -61,7 +60,6 @@ contract LilNounsUnitTest is Test {
             _targetPrice,
             _priceDecayPercent,
             _perTimeUnit,
-            _nextNounId,
             _startTime,
             address(nounsToken),
             address(weth),
@@ -69,10 +67,10 @@ contract LilNounsUnitTest is Test {
         );
         nounsToken.setMinter(address(vrgda));
         vrgda.transferOwnership(nounsDAOAddress);
-        // vm.prank(address(this));
     }
 
-    // This function is taken from https://github.com/nounsDAO/nouns-monorepo/blob/0c15de7071e1b95b6a542396d345a53b19f86e22/packages/nouns-contracts/test/foundry/helpers/DescriptorHelpers.sol#L14
+    // This function is taken from
+    // https://github.com/nounsDAO/nouns-monorepo/blob/0c15de7071e1b95b6a542396d345a53b19f86e22/packages/nouns-contracts/test/foundry/helpers/DescriptorHelpers.sol#L14
     function populateDescriptor() public {
         // created with `npx hardhat descriptor-v1-export-abi`
         string memory filename = './test/files/descriptor_v1/image-data.abi';

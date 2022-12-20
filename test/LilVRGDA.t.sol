@@ -36,7 +36,6 @@ contract LilVRGDATest is LilNounsUnitTest {
             int256(targetPrice), // Target price.
             0.31e18, // Price decay percent.
             24 * 4 * 1e18, // Per time unit.
-            0, // ID of the noun last sold
             block.timestamp, // auction start time
             0 // reservePrice
         );

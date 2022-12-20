@@ -54,7 +54,6 @@ contract LilVRGDA is
         int256 _targetPrice,
         int256 _priceDecayPercent,
         int256 _perTimeUnit,
-        uint256 _nextNounId,
         uint256 _startTime,
         address _nounsTokenAddress,
         address _wethAddress,
@@ -65,7 +64,7 @@ contract LilVRGDA is
         __Ownable_init();
 
         nounsToken = NounsToken(_nounsTokenAddress);
-        nextNounId = _nextNounId;
+        nextNounId = nounsToken.totalSupply();
         startTime = _startTime;
         wethAddress = _wethAddress;
         reservePrice = _reservePrice;
