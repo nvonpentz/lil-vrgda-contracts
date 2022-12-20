@@ -57,7 +57,7 @@ contract LilVRGDATest is LilNounsUnitTest {
         (uint256 nounId, , , uint256 price, bytes32 hash) = vrgda
             .fetchNextNoun();
 
-        vm.expectEmit(false, true, true, true); // TODO not sure if this is working as expected
+        vm.expectEmit(false, true, true, true);
         vrgda.settleAuction{value: price}(nounId, hash);
 
         // A noun should have been minted to nounders
@@ -245,9 +245,6 @@ contract LilVRGDATest is LilNounsUnitTest {
         vrgda.settleAuction{value: price}(nounId, hash);
     }
 
-    // function testFetchNextNoun() public {} // TODO in fork test
-    // TODO test reentrancy vector
-
     function testRejectsEther() public {
         // VRGDA contract should transactions with ether value with calldata sent to fallback
         vm.expectRevert("Revert");
@@ -260,7 +257,6 @@ contract LilVRGDATest is LilNounsUnitTest {
         vm.expectRevert("revert");
         (sent, ) = payable(address(vrgda)).call{value: 1 ether}(new bytes(0));
         assertFalse(sent);
-        // TODO document why these cases are different
     }
 
     function testVRGDAPricing() public {
