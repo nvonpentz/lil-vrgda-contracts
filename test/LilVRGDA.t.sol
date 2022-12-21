@@ -3,27 +3,7 @@ pragma solidity ^0.8.17;
 
 import {LilVRGDA} from "../src/LilVRGDA.sol";
 import {LilNounsUnitTest} from "./helpers/LilNounsUnitTest.sol";
-
-// MockWETHReceiver can call settleAuction,
-// but does not support receiving ether (for refunds)
-// so it must use WETH fallback
-contract MockWETHReceiver {
-    LilVRGDA internal immutable vrgda;
-
-    constructor(address _lilVRGDAAddress) {
-        vrgda = LilVRGDA(_lilVRGDAAddress);
-    }
-
-    function callSettleAuction(
-        uint256 expectedNounId,
-        bytes32 expectedParentBlockhash
-    ) external payable {
-        vrgda.settleAuction{value: msg.value}(
-            expectedNounId,
-            expectedParentBlockhash
-        );
-    }
-}
+import {console} from "forge-std/console.sol";
 
 contract LilVRGDATest is LilNounsUnitTest {
     uint256 targetPrice = 0.15e18;
@@ -280,5 +260,26 @@ contract LilVRGDATest is LilNounsUnitTest {
 
         // At the first interval price should be target price (assuming no sales)
         assertEq(targetPrice, priceAtUpdate);
+    }
+}
+
+// MockWETHReceiver can call settleAuction,
+// but does not support receiving ether (for refunds)
+// so it must use WETH fallback
+contract MockWETHReceiver {
+    LilVRGDA internal immutable vrgda;
+
+    constructor(address _lilVRGDAAddress) {
+        vrgda = LilVRGDA(_lilVRGDAAddress);
+    }
+
+    function callSettleAuction(
+        uint256 expectedNounId,
+        bytes32 expectedParentBlockhash
+    ) external payable {
+        vrgda.settleAuction{value: msg.value}(
+            expectedNounId,
+            expectedParentBlockhash
+        );
     }
 }

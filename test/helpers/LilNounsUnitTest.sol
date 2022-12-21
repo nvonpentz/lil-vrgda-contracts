@@ -5,6 +5,7 @@ import { Test } from 'forge-std/Test.sol';
 import { LilVRGDA } from '../../src/LilVRGDA.sol';
 import { IProxyRegistry } from 'lil-nouns-contracts/external/opensea/IProxyRegistry.sol';
 import { NounsDescriptor } from 'lil-nouns-contracts/NounsDescriptor.sol';
+import { NounsAuctionHouse } from 'lil-nouns-contracts/NounsAuctionHouse.sol';
 import { NounsSeeder } from 'lil-nouns-contracts/NounsSeeder.sol';
 import { INounsSeeder } from 'lil-nouns-contracts/interfaces/INounsSeeder.sol';
 import { NounsToken } from 'lil-nouns-contracts/NounsToken.sol';
@@ -17,6 +18,7 @@ contract LilNounsUnitTest is Test {
     INounsSeeder seeder;
     LilVRGDA vrgda;
     NounsDescriptor descriptor;
+    NounsAuctionHouse oldAuctionHouse;
     WETH weth;
 
     address noundersDAOAddress = address(1); // Used by NounsToken
@@ -39,34 +41,53 @@ contract LilNounsUnitTest is Test {
         uint256 _startTime,
         uint256 _reservePrice
     ) public {
-        address oldMinterAddress = address(3);
-        address proxyRegistryAddress = address(11);
+        weth = new WETH();
 
+        // Set up the existing Nouns contracts
+        oldAuctionHouse = new NounsAuctionHouse();
+        address proxyRegistryAddress = address(11);
         proxyRegistry = IProxyRegistry(proxyRegistryAddress);
         descriptor = new NounsDescriptor();
         seeder = new NounsSeeder();
         nounsToken = new NounsToken(
             noundersDAOAddress,
             nounsDAOAddress,
-            oldMinterAddress,
+            address(oldAuctionHouse),
             descriptor,
             seeder,
             proxyRegistry
         );
-        weth = new WETH();
-
+        oldAuctionHouse.initialize(
+            nounsToken, // nounsToken
+            address(weth), // weth
+            1 minutes, // timeBuffer
+            _reservePrice, // reservePrice
+            1, // minBidIncrementPercent
+            15 minutes // duration
+        );
+        // oldAuctionHouse.unpause(); // TODO
         vrgda = new LilVRGDA();
         vrgda.initialize(
             _targetPrice,
             _priceDecayPercent,
             _perTimeUnit,
             _startTime,
-            address(nounsToken),
-            address(weth),
-            _reservePrice
+            address(nounsToken)
         );
-        nounsToken.setMinter(address(vrgda));
         vrgda.transferOwnership(nounsDAOAddress);
+        nounsToken.setMinter(address(vrgda));
+        vm.prank(nounsDAOAddress);
+        vrgda.unpause();
+
+        // Weth address should have transferred over
+        assertEq(vrgda.weth(), oldAuctionHouse.weth());
+
+        // Reserve price should have transferred over
+        assertEq(vrgda.reservePrice(), oldAuctionHouse.reservePrice());
+
+        // NounID should have transferred over // TODO
+        // ( uint256 nounId, , , , ,) =  oldAuctionHouse.auction();
+        // assertEq(vrgda.nextNounId(), nounId+1);
     }
 
     // This function is taken from

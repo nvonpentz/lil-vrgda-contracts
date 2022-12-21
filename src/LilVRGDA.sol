@@ -3,6 +3,7 @@ pragma solidity ^0.8.17;
 
 import {INounsSeeder} from "lil-nouns-contracts/interfaces/INounsSeeder.sol";
 import {INounsDescriptor} from "lil-nouns-contracts/interfaces/INounsDescriptor.sol";
+import {NounsAuctionHouse} from "lil-nouns-contracts/NounsAuctionHouse.sol";
 import {ILilVRGDA} from "./interfaces/ILilVRGDA.sol";
 import {IWETH} from "lil-nouns-contracts/interfaces/IWETH.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -33,7 +34,11 @@ contract LilVRGDA is
     uint256 public reservePrice;
 
     /// @notice The WETH contract address
-    address public wethAddress;
+    address public weth;
+
+    /// @notice The address of the auction house contract to be replaced
+    /// @dev Used to track which token ID to the VRGDA auction start at
+    address internal oldAuctionHouseAddress;
 
     /// @notice The Nouns ERC721 token contract
     NounsToken public nounsToken;
@@ -55,20 +60,17 @@ contract LilVRGDA is
         int256 _priceDecayPercent,
         int256 _perTimeUnit,
         uint256 _startTime,
-        address _nounsTokenAddress,
-        address _wethAddress,
-        uint256 _reservePrice
+        address _nounsTokenAddress
     ) external initializer {
         __Pausable_init();
         __ReentrancyGuard_init();
         __Ownable_init();
 
-        nounsToken = NounsToken(_nounsTokenAddress);
-        nextNounId = nounsToken.totalSupply();
-        startTime = _startTime;
-        wethAddress = _wethAddress;
-        reservePrice = _reservePrice;
+        _pause();
 
+        nounsToken = NounsToken(_nounsTokenAddress);
+        oldAuctionHouseAddress = address(nounsToken.minter());
+        startTime = _startTime;
         targetPrice = _targetPrice;
         decayConstant = wadLn(1e18 - _priceDecayPercent);
         require(decayConstant < 0, "NON_NEGATIVE_DECAY_CONSTANT");
@@ -176,6 +178,26 @@ contract LilVRGDA is
     /// @notice Unpause the LilVRGDA auction.
     /// @dev This function can only be called by the owner when the contract is paused.
     function unpause() external override onlyOwner {
+        // If the nextNounId is 0, then this is the first time the auction is unpaused
+        // and we must carry over some variables from the old implementation to the new
+        if (nextNounId == 0) {
+            // Get the auction from the old auction house
+            NounsAuctionHouse oldAuctionHouse = NounsAuctionHouse(
+                oldAuctionHouseAddress
+            );
+            (uint256 nounId, , , , , ) = oldAuctionHouse.auction();
+
+            // Carry over the nextNounId
+            if (nounId != 0) {
+                nextNounId = nounId + 1;
+            }
+
+            // Carry over the reservePrice
+            reservePrice = oldAuctionHouse.reservePrice();
+
+            // Carry over the weth address
+            weth = oldAuctionHouse.weth();
+        }
         _unpause();
     }
 
@@ -255,11 +277,11 @@ contract LilVRGDA is
         return _nextNounIdForCaller;
     }
 
-    /// @notice Transfer ETH. If the ETH transfer fails, wrap the ETH and try send it as wethAddress.
+    /// @notice Transfer ETH. If the ETH transfer fails, wrap the ETH and try send it as weth.
     function _safeTransferETHWithFallback(address to, uint256 amount) internal {
         if (!_safeTransferETH(to, amount)) {
-            IWETH(wethAddress).deposit{value: amount}();
-            IERC20(wethAddress).transfer(to, amount);
+            IWETH(weth).deposit{value: amount}();
+            IERC20(weth).transfer(to, amount);
         }
     }
 
