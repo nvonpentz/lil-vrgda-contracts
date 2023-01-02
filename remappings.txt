@@ -1,2 +1,12 @@
 lil-nouns-contracts/=lib/lilnouns-monorepo/packages/nouns-contracts/contracts/
 @openzeppelin/=lib/lilnouns-monorepo/node_modules/@openzeppelin
+openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
+@ensdomains/=lib/lilnouns-monorepo/node_modules/@ensdomains/
+@graphprotocol/=lib/lilnouns-monorepo/node_modules/@graphprotocol/
+@nouns/=lib/lilnouns-monorepo/node_modules/@nouns/
+VRGDAs/=lib/VRGDAs/src/
+base64-sol/=lib/lilnouns-monorepo/node_modules/base64-sol/
+eth-gas-reporter/=lib/lilnouns-monorepo/node_modules/eth-gas-reporter/
+forge-std/=lib/forge-std/src/
+hardhat/=lib/lilnouns-monorepo/node_modules/hardhat/
+lilnouns-monorepo/=lib/lilnouns-monorepo/
