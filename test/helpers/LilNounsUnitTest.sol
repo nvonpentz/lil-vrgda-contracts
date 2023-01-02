@@ -65,7 +65,6 @@ contract LilNounsUnitTest is Test {
             1, // minBidIncrementPercent
             15 minutes // duration
         );
-        // oldAuctionHouse.unpause(); // TODO
         vrgda = new LilVRGDA();
         vrgda.initialize(
             _targetPrice,
@@ -85,9 +84,13 @@ contract LilNounsUnitTest is Test {
         // Reserve price should have transferred over
         assertEq(vrgda.reservePrice(), oldAuctionHouse.reservePrice());
 
-        // NounID should have transferred over // TODO
-        // ( uint256 nounId, , , , ,) =  oldAuctionHouse.auction();
-        // assertEq(vrgda.nextNounId(), nounId+1);
+        // NounID should have transferred over
+        ( uint256 nounId, , , , ,) = oldAuctionHouse.auction();
+        if (nounId != 0) {
+            assertEq(vrgda.nextNounId(), nounId+1);
+        } else {
+            assertEq(vrgda.nextNounId(), nounId);
+        }
     }
 
     // This function is taken from

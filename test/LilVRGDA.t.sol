@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.17;
 
+import {Test} from "forge-std/Test.sol";
 import {LilVRGDA} from "../src/LilVRGDA.sol";
 import {LilNounsUnitTest} from "./helpers/LilNounsUnitTest.sol";
+import {NounsAuctionHouse} from "lil-nouns-contracts/NounsAuctionHouse.sol";
+import {NounsToken} from "lil-nouns-contracts/NounsToken.sol";
 import {console} from "forge-std/console.sol";
 
 contract LilVRGDATest is LilNounsUnitTest {
@@ -260,6 +263,58 @@ contract LilVRGDATest is LilNounsUnitTest {
 
         // At the first interval price should be target price (assuming no sales)
         assertEq(targetPrice, priceAtUpdate);
+    }
+}
+
+contract LilVRGDAMainnetUpgradeTest is Test {
+    uint256 constant BLOCK_AT_3935_MINT = 15233857;
+    string MAINNET_RPC_URL;
+    NounsToken nounsToken;
+    NounsAuctionHouse oldAuctionHouse;
+
+    function setUp() public {
+        MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
+
+        // Connect to mainnet fork
+        vm.createSelectFork(MAINNET_RPC_URL);
+
+        // Use block after 3935 mint
+        vm.rollFork(BLOCK_AT_3935_MINT + 1);
+
+        nounsToken = NounsToken(
+            address(0x4b10701Bfd7BFEdc47d50562b76b436fbB5BdB3B)
+        );
+        oldAuctionHouse = NounsAuctionHouse(address(nounsToken.minter()));
+        assertEq(
+            address(oldAuctionHouse),
+            address(0x55e0F7A3bB39a28Bd7Bcc458e04b3cF00Ad3219E)
+        );
+    }
+
+    function testMainnetUpgrade() public {
+        // Deploy VRGDA auction contract and initialize
+        LilVRGDA vrgda = new LilVRGDA();
+        vrgda.initialize(
+            int256(0.15 ether), // Target price.
+            0.31e18, // Price decay percent.
+            24 * 4 * 1e18, // Per time unit.
+            block.timestamp, // auction start time
+            address(nounsToken) // Nouns token address
+        );
+
+        // Set the minter from the old auction house to the new
+        vm.prank(address(nounsToken.owner()));
+        nounsToken.setMinter(address(vrgda));
+
+        // Unpause the VRGDA auction which carrys over the paused state
+        // from the old auction house
+        vm.prank(address(vrgda.owner()));
+        vrgda.unpause();
+
+        (uint256 nounId, , , , ) = vrgda.fetchNextNoun();
+
+        // Noun ID should be one more than the previous auction
+        assertEq(nounId, 3935 + 1);
     }
 }
 
