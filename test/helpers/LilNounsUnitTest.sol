@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.17;
 
-import { Test } from 'forge-std/Test.sol';
-import { LilVRGDA } from '../../src/LilVRGDA.sol';
-import { IProxyRegistry } from 'lil-nouns-contracts/external/opensea/IProxyRegistry.sol';
-import { NounsDescriptor } from 'lil-nouns-contracts/NounsDescriptor.sol';
-import { NounsAuctionHouse } from 'lil-nouns-contracts/NounsAuctionHouse.sol';
-import { NounsSeeder } from 'lil-nouns-contracts/NounsSeeder.sol';
-import { INounsSeeder } from 'lil-nouns-contracts/interfaces/INounsSeeder.sol';
-import { NounsToken } from 'lil-nouns-contracts/NounsToken.sol';
-import { WETH } from 'lil-nouns-contracts/test/WETH.sol';
+import {Test} from "forge-std/Test.sol";
+import {LilVRGDA} from "../../src/LilVRGDA.sol";
+import {IProxyRegistry} from "lil-nouns-contracts/external/opensea/IProxyRegistry.sol";
+import {NounsDescriptor} from "lil-nouns-contracts/NounsDescriptor.sol";
+import {NounsAuctionHouse} from "lil-nouns-contracts/NounsAuctionHouse.sol";
+import {NounsSeeder} from "lil-nouns-contracts/NounsSeeder.sol";
+import {INounsSeeder} from "lil-nouns-contracts/interfaces/INounsSeeder.sol";
+import {NounsToken} from "lil-nouns-contracts/NounsToken.sol";
+import {WETH} from "lil-nouns-contracts/test/WETH.sol";
 
 // LilNounsUnitTest is the base class that unit test contracts inherit from
 contract LilNounsUnitTest is Test {
@@ -27,9 +27,11 @@ contract LilNounsUnitTest is Test {
     /* Utils */
 
     // Taken from nouns-monorepo
-    function readFile(string memory filepath) internal returns (bytes memory output) {
+    function readFile(
+        string memory filepath
+    ) internal returns (bytes memory output) {
         string[] memory inputs = new string[](2);
-        inputs[0] = 'cat';
+        inputs[0] = "cat";
         inputs[1] = filepath;
         output = vm.ffi(inputs);
     }
@@ -85,9 +87,9 @@ contract LilNounsUnitTest is Test {
         assertEq(vrgda.reservePrice(), oldAuctionHouse.reservePrice());
 
         // NounID should have transferred over
-        ( uint256 nounId, , , , ,) = oldAuctionHouse.auction();
+        (uint256 nounId, , , , , ) = oldAuctionHouse.auction();
         if (nounId != 0) {
-            assertEq(vrgda.nextNounId(), nounId+1);
+            assertEq(vrgda.nextNounId(), nounId + 1);
         } else {
             assertEq(vrgda.nextNounId(), nounId);
         }
@@ -97,7 +99,7 @@ contract LilNounsUnitTest is Test {
     // https://github.com/nounsDAO/nouns-monorepo/blob/0c15de7071e1b95b6a542396d345a53b19f86e22/packages/nouns-contracts/test/foundry/helpers/DescriptorHelpers.sol#L14
     function populateDescriptor() public {
         // created with `npx hardhat descriptor-v1-export-abi`
-        string memory filename = './test/files/descriptor_v1/image-data.abi';
+        string memory filename = "./test/files/descriptor_v1/image-data.abi";
         bytes memory content = readFile(filename);
         (
             string[] memory bgcolors,
@@ -106,7 +108,10 @@ contract LilNounsUnitTest is Test {
             bytes[] memory accessories,
             bytes[] memory heads,
             bytes[] memory glasses
-        ) = abi.decode(content, (string[], string[], bytes[], bytes[], bytes[], bytes[]));
+        ) = abi.decode(
+                content,
+                (string[], string[], bytes[], bytes[], bytes[], bytes[])
+            );
 
         descriptor.addManyBackgrounds(bgcolors);
         descriptor.addManyColorsToPalette(0, palette);
@@ -116,4 +121,3 @@ contract LilNounsUnitTest is Test {
         descriptor.addManyGlasses(glasses);
     }
 }
-
