@@ -315,6 +315,12 @@ contract LilVRGDAMainnetUpgradeTest is Test {
 
         // Noun ID should be one more than the previous auction
         assertEq(nounId, 3935 + 1);
+
+        // Reserve should have been carried over from the old auction house
+        assertEq(vrgda.reservePrice(), oldAuctionHouse.reservePrice());
+
+        // WETH contract address should have been carried over from the old auction house
+        assertEq(vrgda.weth(), address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2));
     }
 }
 
